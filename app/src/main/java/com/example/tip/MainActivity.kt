@@ -9,15 +9,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -51,10 +57,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TipTimeLayout(){
     var amountInput by remember{mutableStateOf("")}
+    var percentageValue by remember{ mutableStateOf("") }
+    var roundOffStatus by remember{ mutableStateOf(false) }
+    //to doubleOrNull converts a string representation to a double or null when string cant be a dobule
+    //elvis operator ?: returns the assigned value when an expression returns null
     val amount = amountInput.toDoubleOrNull() ?: 0.0
-    val tip = calculateTip(amount)
+    val percentage = percentageValue.toDoubleOrNull() ?:15.0
+
+    val tip = calculateTip(
+        amount=amount,
+        tipPercent = percentage,
+        roundUp=roundOffStatus)
     Column(
-        modifier = Modifier.padding(40.dp),
+        modifier = Modifier
+            .padding(40.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ){
@@ -67,21 +84,30 @@ fun TipTimeLayout(){
             value = amountInput,
             onValueChange = {amountInput = it},
             modifier = Modifier
-            .padding(bottom = 32.dp)
-            .fillMaxWidth())
+                .padding(bottom = 32.dp)
+                .fillMaxWidth())
+        EditPercentageField(
+            value =percentageValue ,
+            onValueChange = {percentageValue = it},
+            modifier = Modifier
+                .padding(bottom = 32.dp)
+                .fillMaxWidth())
+        RoundoffTip(
+            value = roundOffStatus,
+            onValueChange = {roundOffStatus = it},
+            modifier = Modifier.padding(bottom = 32.dp)
+        )
         Text(
             text = stringResource(R.string.tip_amount,tip),
 
             style = MaterialTheme.typography.displaySmall
         )
         Spacer(modifier = Modifier.height(150.dp))
+
     }
 }
 @Composable
 fun EditNumberField(value:String,onValueChange:(String)->Unit,modifier: Modifier=Modifier){
-
-    //to doubleOrNull converts a string representation to a double or null when string cant be a dobule
-    //elvis operator ?: returns the assigned value when an expression returns null
 
     TextField(
         value = value,
@@ -90,10 +116,45 @@ fun EditNumberField(value:String,onValueChange:(String)->Unit,modifier: Modifier
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         onValueChange =onValueChange,
         modifier=modifier )
-}
-private fun calculateTip(amount: Double, tipPercent: Double = 15.0): String {
 
-    val tip = tipPercent / 100 * amount
+}
+@Composable
+fun EditPercentageField(value:String,onValueChange:(String)->Unit,modifier: Modifier=Modifier){
+
+    //to doubleOrNull converts a string representation to a double or null when string cant be a dobule
+    //elvis operator ?: returns the assigned value when an expression returns null
+
+    TextField(
+        value = value,
+        label={Text(stringResource(R.string.how_was_the_service))},
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        onValueChange =onValueChange,
+        modifier=modifier )
+
+}
+@Composable
+fun RoundoffTip(value:Boolean,onValueChange: (Boolean) -> Unit,modifier: Modifier=Modifier){
+    Row (
+        modifier= modifier
+            .fillMaxWidth()
+            .size(48.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ){
+        Text(text = stringResource(R.string.round_up_tip))
+        Switch(
+            modifier = modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.End),
+            checked = value, onCheckedChange = onValueChange)
+    }
+}
+private fun calculateTip(amount: Double, tipPercent: Double,roundUp:Boolean): String {
+
+    var tip = tipPercent / 100 * amount
+    if(roundUp){
+        tip = kotlin.math.ceil(tip)
+    }
     return NumberFormat.getCurrencyInstance().format(tip)
 }
 
